@@ -6,7 +6,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Message;
+import android.os.Process;
 import android.util.Log;
 
 
@@ -17,6 +19,7 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private WorkHandlerThread mWorkHandlerThread;
     private Handler mUiHandler;//主线程的Handler
+    private WorkHandler mWorkHandler;
     private static int mCount = 0;
 
     @Override
@@ -25,7 +28,18 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         Log.e(TAG, "onCreate");
+        Thread1();
+    }
 
+    private void Thread1() {
+        HandlerThread mHandlerThread = new HandlerThread("WorkThread", Process.THREAD_PRIORITY_BACKGROUND);
+        mHandlerThread.start(); // 启动Loop
+        mWorkHandler = new WorkHandler(mHandlerThread.getLooper()); // 线程与Handler关联
+        mWorkHandler.setCurrentHandler(mWorkHandler);
+        mWorkHandler.sendEmptyMessage(WorkHandler.TYPE_INIT);
+    }
+
+    private void Thread2() {
         mWorkHandlerThread = new WorkHandlerThread("WorkHandlerThread");
         mWorkHandlerThread.start();
         mUiHandler = new Handler(mWorkHandlerThread.getLooper()) {
@@ -82,7 +96,10 @@ public class MainActivity extends AppCompatActivity {
         if (mWorkHandlerThread != null) {
             mWorkHandlerThread.quitSafely();
         }
+        if (mWorkHandler != null) {
+            mWorkHandler.removeCallbacksAndMessages(null);
+            mWorkHandler = null;
+        }
         super.onDestroy();
     }
-
 }
