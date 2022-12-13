@@ -4,7 +4,7 @@ import android.util.Log;
 
 public class TofHelper {
     public static int test;
-    private  static TofHelper mTofHelper;
+    private static TofHelper mTofHelper;
 
     private ParamInfo mParamInfo = new ParamInfo();
     public ParamInfo getmParamInfo() {

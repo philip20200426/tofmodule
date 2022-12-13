@@ -42,9 +42,14 @@ Java_com_nbd_autofocus_tofmodule_TofHelper_getResultsData(JNIEnv *env, jobject t
         LOGE("vl53l5cx Start Ranging failed\n");
     }
     LOGD("vl53l5cx resolution %d streamcount %d \n", Dev.resolution, Dev.streamcount);
+    time_t timep;
     loop = 0;
     short loopCount = 1;
     while(loop < loopCount) {
+
+        time(&timep);  /*得到time_t类型的UTC时间*/
+        LOGD("time():%d\n",timep);
+        LOGD("vl53l5cx resolution %d streamcount %d \n", Dev.resolution, Dev.streamcount);
         vl53l5cx_check_data_ready(&Dev, &isReady);
         if (isReady) {
             vl53l5cx_get_ranging_data(&Dev, &Results);

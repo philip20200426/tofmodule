@@ -1,52 +1,88 @@
 package com.nbd.autofocus;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 
-import com.nbd.autofocus.tofmodule.TofHelper;
+
 import com.nbd.tofmodule.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity {
-        private ActivityMainBinding binding;
+    private static final String TAG = "MainActivity";
+    private ActivityMainBinding binding;
+    private WorkHandlerThread mWorkHandlerThread;
+    private Handler mUiHandler;//主线程的Handler
+    private static int mCount = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Used to load the 'tofmodule' library on application startup.
-        TofHelper.test = 1;
-        Log.d("TofModule", "---------------------------------");
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        Log.e(TAG, "onCreate");
 
-        TofHelper mTofHelper = TofHelper.getInstance();
-
-        TofHelper.ParamInfo mParamInfo =  mTofHelper.getmParamInfo();
-        byte[] b = new byte[10];
-        for (int i = 0; i < 9; i++) {
-            b[i] = (byte) (i + 97);
-        }
-        mParamInfo.data = b;
-        mParamInfo.device = "i2c0";
-        mParamInfo.resolutionValue = 64;
-        mParamInfo.rangingMode = 1;
-        mParamInfo.frequencyHz = 15;
-        mParamInfo.targetOrder = 1;
-        if (mTofHelper.openModule() == 0) {
-            mTofHelper.setParamInfo(mParamInfo);
-            TofHelper.ResultsData mResultsData = mTofHelper.getResultsData();
-            for (int i = 0; i < mParamInfo.resolutionValue; i++) {
-                Log.i(" TofModule", "Zone : " + i +
-                        ", Target status : " + mResultsData.targetStatus[i] +
-                        ", distance : " + mResultsData.distanceMm[i]);
+        mWorkHandlerThread = new WorkHandlerThread("WorkHandlerThread");
+        mWorkHandlerThread.start();
+        mUiHandler = new Handler(mWorkHandlerThread.getLooper()) {
+            @Override
+            public void handleMessage(@NonNull Message msg) {
+                Log.e(TAG, "WorkHandlerThread state : " + msg.what + " mCount " + mCount);
+                switch (msg.what) {
+                    case WorkHandlerThread.TYPE_FAIL:
+                        Log.e(TAG, "open fail");
+                        if (mUiHandler != null) {
+                            mUiHandler.removeCallbacksAndMessages(null);
+                            mUiHandler = null;
+                        }
+                        if (mWorkHandlerThread != null) {
+                            mWorkHandlerThread.quitSafely();
+                        }
+                        break;
+                    case WorkHandlerThread.TYPE_INIT:
+                        mWorkHandlerThread.init();
+                        mUiHandler.sendEmptyMessage(WorkHandlerThread.TYPE_GET);
+                        break;
+                    case WorkHandlerThread.TYPE_GET:
+                        mWorkHandlerThread.getData();
+                        try {
+                            Thread.sleep(6000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        mCount++;
+                        mUiHandler.sendEmptyMessage(WorkHandlerThread.TYPE_GET);
+                        break;
+                    default:
+                        break;
+                }
+                super.handleMessage(msg);
             }
-        } else {
-            Log.e("TofModule", " TOF open error");
-        }
+        };
+        mWorkHandlerThread.setUIHandler(mUiHandler);
+        mUiHandler.sendEmptyMessage(WorkHandlerThread.TYPE_INIT);
     }
 
-    public void TofCallback() {
-        Log.e("philip", "TofCallback");
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Log.e(TAG, "onStart");
     }
+
+    @Override
+    protected void onDestroy() {
+        if (mUiHandler != null) {
+            mUiHandler.removeCallbacksAndMessages(null);
+            mUiHandler = null;
+        }
+        if (mWorkHandlerThread != null) {
+            mWorkHandlerThread.quitSafely();
+        }
+        super.onDestroy();
+    }
+
 }

@@ -6,7 +6,7 @@
 #ifndef TOFMODULE_LOG_H
 #define TOFMODULE_LOG_H
 
-#define LOG_SWITCH 1
+#define LOG_SWITCH 0
 #define LOG_TAG "TofModule"
 #define LOGE(format, ...)  __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, format, ##__VA_ARGS__)
 #if(LOG_SWITCH == 1)
