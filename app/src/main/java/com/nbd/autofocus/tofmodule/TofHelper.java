@@ -14,7 +14,6 @@ public class TofHelper {
     public static TofHelper getInstance() {
         synchronized (TofHelper.class) {
             if (mTofHelper == null) {
-                Log.e("TofModule", "test static =======================");
                 System.loadLibrary("tofmodule");
                 mTofHelper = new TofHelper();
             }
