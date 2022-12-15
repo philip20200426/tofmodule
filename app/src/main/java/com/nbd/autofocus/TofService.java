@@ -20,6 +20,7 @@ import static android.app.NotificationManager.IMPORTANCE_HIGH;
 import androidx.annotation.NonNull;
 
 import com.nbd.autofocus.tofmodule.TofHelper;
+import com.nbd.autofocus.utils.LogUtil;
 import com.nbd.motorlibrary.JarTest;
 
 public class TofService extends Service {
@@ -59,7 +60,7 @@ public class TofService extends Service {
         super.onCreate();
         Log.e(TAG, "setvalue " + JarTest.getvalue());
         Log.e(TAG, "onCreate");
-
+        LogUtil.d(TAG, "-----------");
         mServiceReceiver = new ServiceReceiver();
         IntentFilter filter = new IntentFilter();
         filter.addAction("tof.service.state");
