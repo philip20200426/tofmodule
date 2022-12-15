@@ -28,8 +28,36 @@ public class MainActivity extends AppCompatActivity {
         Log.e(TAG, "onCreate");
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-        Thread1();
+
+        // 启动service
+        Intent mIntent=new Intent(MainActivity.this, TofService.class) ;
+        mIntent.putExtra("abc", 160927);
+        startService(mIntent);
+        //Thread1();
     }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Log.e(TAG, "onStart");
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (mUiHandler != null) {
+            mUiHandler.removeCallbacksAndMessages(null);
+            mUiHandler = null;
+        }
+        if (mWorkHandlerThread != null) {
+            mWorkHandlerThread.quitSafely();
+        }
+        if (mWorkHandler != null) {
+            mWorkHandler.removeCallbacksAndMessages(null);
+            mWorkHandler = null;
+        }
+        super.onDestroy();
+    }
+
 
     private void Thread1() {
         HandlerThread mHandlerThread = new HandlerThread("WorkThread", Process.THREAD_PRIORITY_BACKGROUND);
@@ -79,27 +107,5 @@ public class MainActivity extends AppCompatActivity {
         };
         mWorkHandlerThread.setUIHandler(mUiHandler);
         mUiHandler.sendEmptyMessage(WorkHandlerThread.TYPE_INIT);
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        Log.e(TAG, "onStart");
-    }
-
-    @Override
-    protected void onDestroy() {
-        if (mUiHandler != null) {
-            mUiHandler.removeCallbacksAndMessages(null);
-            mUiHandler = null;
-        }
-        if (mWorkHandlerThread != null) {
-            mWorkHandlerThread.quitSafely();
-        }
-        if (mWorkHandler != null) {
-            mWorkHandler.removeCallbacksAndMessages(null);
-            mWorkHandler = null;
-        }
-        super.onDestroy();
     }
 }

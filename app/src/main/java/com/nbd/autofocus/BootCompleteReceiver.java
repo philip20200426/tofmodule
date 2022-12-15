@@ -19,6 +19,7 @@ public class BootCompleteReceiver extends BroadcastReceiver {
             Intent mIntent = new Intent(context, TofService.class);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 Log.d(TAG, "Android Boot Completed !!!");
+                mIntent.putExtra("abc", 180702);
                 context.startForegroundService(mIntent);
             }
         }

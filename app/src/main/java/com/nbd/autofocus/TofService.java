@@ -17,6 +17,7 @@ import static android.app.NotificationManager.IMPORTANCE_HIGH;
 import androidx.annotation.NonNull;
 
 import com.nbd.autofocus.tofmodule.TofHelper;
+import com.nbd.motorlibrary.JarTest;
 
 public class TofService extends Service {
     private static final String TAG = TofService.class.getSimpleName();
@@ -41,14 +42,18 @@ public class TofService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        Log.e(TAG, "setvalue " + JarTest.getvalue());
         Log.e(TAG, "onCreate");
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.e(TAG, "onStartCommand");
+        Log.e(TAG, "onStartCommand " + intent.getIntExtra("abc", 0));
+
         startForeground();
         enableTofModule();
+        JarTest.setvalue(6);
+        Log.e(TAG, "setvalue " + JarTest.getvalue());
         return super.onStartCommand(intent, flags, startId);
     }
 
