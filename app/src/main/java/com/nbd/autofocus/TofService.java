@@ -4,7 +4,10 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -25,10 +28,22 @@ public class TofService extends Service {
     private HandlerThread mHandlerThread;
     private Handler mHandler;
     private static int mCount = 0;
+
     public static final int TYPE_FAIL = -1;
-    public static final int TYPE_INIT = 1;
-    public static final int TYPE_GET = 2;
+    public static final int TYPE_INIT = 0;
+    public static final int TYPE_GET = 1;
+    public static final int TYPE_LOOP_GET = 2;
+    public static final int TYPE_EXIT = 3;
+
+/*    enum StateMachine {
+        public static final int TYPE_FAIL = -1;
+        public static final int TYPE_INIT = 1;
+        public static final int TYPE_GET = 2;
+        public static final int TYPE_LOOP_GET = 0;
+    }*/
+
     TofHelper.ParamInfo mParamInfo;
+    ServiceReceiver  mServiceReceiver;
 
     public TofService() {
     }
@@ -44,6 +59,11 @@ public class TofService extends Service {
         super.onCreate();
         Log.e(TAG, "setvalue " + JarTest.getvalue());
         Log.e(TAG, "onCreate");
+
+        mServiceReceiver = new ServiceReceiver();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("tof.service.state");
+        registerReceiver(mServiceReceiver, filter);
     }
 
     @Override
@@ -51,13 +71,14 @@ public class TofService extends Service {
         Log.e(TAG, "onStartCommand " + intent.getIntExtra("abc", 0));
 
         startForeground();
-        enableTofModule();
+        startTofThread();
+        mHandler.sendEmptyMessage(TYPE_INIT);
         JarTest.setvalue(6);
         Log.e(TAG, "setvalue " + JarTest.getvalue());
         return super.onStartCommand(intent, flags, startId);
     }
 
-    public void enableTofModule() {
+    public void startTofThread() {
         mHandlerThread = new HandlerThread("WorkHandlerThread");
         mHandlerThread.start();
 
@@ -66,21 +87,22 @@ public class TofService extends Service {
             public void handleMessage(@NonNull Message msg) {
                 Log.e(TAG, "WorkHandlerThread state : " + msg.what + " mCount " + mCount);
                 switch (msg.what) {
-                    case WorkHandlerThread.TYPE_FAIL:
-                        Log.e(TAG, "open fail");
-                        if (mHandler != null) {
-                            mHandler.removeCallbacksAndMessages(null);
-                            mHandler = null;
-                        }
-                        if (mHandlerThread != null) {
-                            mHandlerThread.quitSafely();
-                        }
+                    case TYPE_EXIT:
+                        Log.e(TAG, "Thread Exit");
+                        flushModule();
                         break;
-                    case WorkHandlerThread.TYPE_INIT:
+                    case TYPE_FAIL:
+                        Log.e(TAG, "Open Module Fail");
+                        flushModule();
+                        break;
+                    case TYPE_INIT:
                         init();
                         mHandler.sendEmptyMessage(TYPE_GET);
                         break;
-                    case WorkHandlerThread.TYPE_GET:
+                    case TYPE_GET:
+                        getData();
+                        break;
+                    case TYPE_LOOP_GET:
                         getData();
                         try {
                             Thread.sleep(6000);
@@ -88,7 +110,7 @@ public class TofService extends Service {
                             e.printStackTrace();
                         }
                         mCount++;
-                        mHandler.sendEmptyMessage(TYPE_GET);
+                        mHandler.sendEmptyMessage(TYPE_LOOP_GET);
                         break;
                     default:
                         break;
@@ -96,19 +118,12 @@ public class TofService extends Service {
                 super.handleMessage(msg);
             }
         };
-        mHandler.sendEmptyMessage(TYPE_INIT);
     }
 
     @Override
     public void onDestroy() {
         Log.e(TAG, "onDestroy");
-        if (mHandler != null) {
-            mHandler.removeCallbacksAndMessages(null);
-            mHandler = null;
-        }
-        if (mHandlerThread != null) {
-            mHandlerThread.quitSafely();
-        }
+        flushModule();
         stopForeground();
         super.onDestroy();
     }
@@ -169,5 +184,40 @@ public class TofService extends Service {
                     ", distance : " + mResultsData.distanceMm[i]);
         }*/
         return mResultsData.status;
+    }
+
+    public void flushModule() {
+        if (mHandler != null) {
+            mHandler.removeCallbacksAndMessages(null);
+            mHandler = null;
+        }
+        if (mHandlerThread != null) {
+            mHandlerThread.quitSafely();
+        }
+    }
+    private class  ServiceReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.e(TAG, "------ " + intent.getStringExtra("operate"));
+            if ("loop".equals(intent.getStringExtra("operate"))) {
+                mHandler.sendEmptyMessage(TYPE_LOOP_GET);
+            }
+            switch (intent.getStringExtra("operate")) {
+                case "loop":
+                    mHandler.sendEmptyMessage(TYPE_LOOP_GET);
+                    break;
+                case "init":
+                    mHandler.sendEmptyMessage(TYPE_INIT);
+                    break;
+                case "get":
+                    mHandler.sendEmptyMessage(TYPE_GET);
+                    break;
+                case "exit":
+                    mHandler.sendEmptyMessage(TYPE_EXIT);
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 }
