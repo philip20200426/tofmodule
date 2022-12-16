@@ -9,9 +9,11 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
 import android.os.Process;
+import android.os.SystemProperties;
 import android.util.Log;
 
 
+import com.nbd.autofocus.utils.LogUtil;
 import com.nbd.tofmodule.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity {

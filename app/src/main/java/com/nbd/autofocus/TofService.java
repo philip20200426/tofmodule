@@ -13,6 +13,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Message;
+import android.os.SystemProperties;
 import android.util.Log;
 
 import static android.app.NotificationManager.IMPORTANCE_HIGH;
@@ -65,6 +66,7 @@ public class TofService extends Service {
         IntentFilter filter = new IntentFilter();
         filter.addAction("tof.service.state");
         registerReceiver(mServiceReceiver, filter);
+        SystemProperties.set("persist.nbd.log", "1");
     }
 
     @Override
@@ -86,7 +88,7 @@ public class TofService extends Service {
         mHandler = new Handler(mHandlerThread.getLooper()) {
             @Override
             public void handleMessage(@NonNull Message msg) {
-                Log.e(TAG, "WorkHandlerThread state : " + msg.what + " mCount " + mCount);
+                LogUtil.d(TAG, "WorkHandlerThread state : " + msg.what + " mCount " + mCount);
                 switch (msg.what) {
                     case TYPE_EXIT:
                         Log.e(TAG, "Thread Exit");
@@ -176,7 +178,7 @@ public class TofService extends Service {
     public int getData() {
 
         TofHelper.ResultsData mResultsData = mTofHelper.getResultsData();
-        Log.i(TAG, "Zone : " + 6 +
+        LogUtil.d(TAG, "Zone : " + 6 +
                 ", Target status : " + mResultsData.targetStatus[6] +
                 ", distance : " + mResultsData.distanceMm[6]);
 /*        for (int i = 0; i < mParamInfo.resolutionValue; i++) {
