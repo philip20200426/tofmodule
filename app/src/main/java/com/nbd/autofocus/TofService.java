@@ -23,6 +23,7 @@ import androidx.annotation.NonNull;
 import com.nbd.autofocus.tofmodule.TofHelper;
 import com.nbd.autofocus.utils.LogUtil;
 import com.nbd.motorlibrary.JarTest;
+import com.nbd.motorlibrary.MotorHelper;
 
 public class TofService extends Service {
     private static final String TAG = TofService.class.getSimpleName();
@@ -30,6 +31,8 @@ public class TofService extends Service {
     private HandlerThread mHandlerThread;
     private Handler mHandler;
     private static int mCount = 0;
+    TofHelper.ParamInfo mParamInfo;
+    ServiceReceiver  mServiceReceiver;
 
     public static final int TYPE_FAIL = -1;
     public static final int TYPE_INIT = 0;
@@ -44,8 +47,29 @@ public class TofService extends Service {
         public static final int TYPE_LOOP_GET = 0;
     }*/
 
-    TofHelper.ParamInfo mParamInfo;
-    ServiceReceiver  mServiceReceiver;
+    //add motor demo
+    public static final String YS_DIRECTION_REDUCE = "2";
+    public static final String YS_DIRECTION_PLUS = "5";
+    public static final String YS_DIRECTION_STOP = "0";
+    public static final int TOTAL_STEPS = 2340;
+    public static final int INTERVAL_STEPS = 26;
+    private static String mMotorDirection = YS_DIRECTION_REDUCE;
+    private static int mNextSteps = 500;
+    private static int mActualSteps = 0;
+    private static int mReversalFlag = 0;
+    enum AfStateMachine {
+        NOINIT,
+        INIT,
+        RUN,
+        RUNNING,
+        STOP,
+        IMAGEPROCESS,
+        ABNORMAL,
+        EXIT
+    }
+    private static AfStateMachine mStateMachineAF = AfStateMachine.INIT;
+    private static MotorHelper mMotorHelper;
+
 
     public TofService() {
     }
@@ -62,11 +86,53 @@ public class TofService extends Service {
         Log.e(TAG, "setvalue " + JarTest.getvalue());
         Log.e(TAG, "onCreate");
         LogUtil.d(TAG, "-----------");
+
+        //在服务内部注册接收广播
         mServiceReceiver = new ServiceReceiver();
         IntentFilter filter = new IntentFilter();
         filter.addAction("tof.service.state");
         registerReceiver(mServiceReceiver, filter);
+
         SystemProperties.set("persist.nbd.log", "1");
+
+        //add motor demo
+        mMotorHelper = MotorHelper.getInstance();
+        mMotorHelper.startObserving();
+        mMotorHelper.initMotor(new MotorHelper.OnMotorListener() {
+            @Override
+            public void onMotorInnerBorder(int direction, int steps) {
+
+            }
+
+            @Override
+            public void onMotorOuterBorder(int direction, int steps) {
+
+            }
+
+            @Override
+            public void onMotorBorder(String direction, int steps) {
+                mReversalFlag = 1;
+                mMotorDirection = direction;
+                mActualSteps = steps;
+                mStateMachineAF = AfStateMachine.STOP;
+                Log.d(TAG, " MotorCallBack Border direction " +
+                        direction + " steps " + steps);
+            }
+
+            @Override
+            public void onMotorError(int error) {
+
+            }
+
+            @Override
+            public void onMotorStepComplete(String direction, int steps) {
+                mMotorDirection = direction;
+                mActualSteps = steps;
+                mStateMachineAF = AfStateMachine.STOP;
+                Log.d(TAG, " MotorCallBack StepComplete direction " + direction + " steps " + steps);
+            }
+        });
+        mMotorHelper.setMotorSteps(YS_DIRECTION_PLUS, 3000);
     }
 
     @Override

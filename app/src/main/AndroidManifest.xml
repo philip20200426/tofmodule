@@ -16,6 +16,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TofModule"
         tools:targetApi="31">
+
         <service
             android:name="com.nbd.autofocus.TofService"
             android:enabled="true"
