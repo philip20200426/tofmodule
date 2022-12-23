@@ -11,10 +11,15 @@ import android.os.Message;
 import android.os.Process;
 import android.os.SystemProperties;
 import android.util.Log;
+import android.widget.TextView;
 
 
 import com.nbd.autofocus.utils.LogUtil;
+import com.nbd.tofmodule.R;
 import com.nbd.tofmodule.databinding.ActivityMainBinding;
+
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -23,6 +28,7 @@ public class MainActivity extends AppCompatActivity {
     private Handler mUiHandler;//主线程的Handler
     private WorkHandler mWorkHandler;
     private static int mCount = 0;
+    private TextView mTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,12 +36,31 @@ public class MainActivity extends AppCompatActivity {
         Log.e(TAG, "onCreate");
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        mTextView =  findViewById(R.id.sample_text);
 
         // 启动service
         Intent mIntent=new Intent(MainActivity.this, TofService.class) ;
         mIntent.putExtra("abc", 160927);
         startService(mIntent);
         //Thread1();
+
+        Handler mHandler = new Handler(getMainLooper()) {
+            @Override
+            public void handleMessage(@NonNull Message msg) {
+                mTextView.setText(String.valueOf(mCount++));
+                super.handleMessage(msg);
+            }
+        };
+        //每隔一秒使用 handler发送一下消息,也就是每隔一秒执行一次,一直重复执行
+        Timer timer=new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                //使用handler发送消息
+                Message message = new Message();
+                mHandler.sendMessage(message);
+            }
+        },0,1000);//每 1s执行一次
     }
 
     @Override

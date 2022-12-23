@@ -192,6 +192,7 @@ public class TofService extends Service {
     @Override
     public void onDestroy() {
         Log.e(TAG, "onDestroy");
+        unregisterReceiver(mServiceReceiver);
         flushModule();
         stopForeground();
         super.onDestroy();
