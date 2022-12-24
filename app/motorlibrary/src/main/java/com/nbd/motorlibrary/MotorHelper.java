@@ -145,7 +145,7 @@ public class MotorHelper {
      * 开始监听customer-AFmoto
      */
     public void startObserving() {
-        Log.d("HBK-U", "startObserving");
+        Log.d(TAG, "startObserving");
         borderUEventObserver.startObserving("DEVPATH=/devices/platform/customer-AFmotor");
     }
 
@@ -153,7 +153,7 @@ public class MotorHelper {
      * 结束监听customer-AFmoto
      */
     public void stopObserving() {
-        Log.d("HBK-U", "stopObserving");
+        Log.d(TAG, "stopObserving");
         borderUEventObserver.stopObserving();
     }
 
@@ -222,7 +222,7 @@ public class MotorHelper {
             mMotorListener.onMotorError(MotorError.MOTOR_TIMEOUT_BORDER.ordinal());
         } else if (mMotorStatus == MotorStatus.MOTOR_STATE_STEPPING) {
             mMotorListener.onMotorError(MotorError.MOTOR_TIMEOUT_STEPPING.ordinal());
-            Log.d(TAG, "电机步进时，启动超时机制");
+            Log.d(TAG, "电机步进超时，启动超时机制");
         }
         mMotorStatus = MotorStatus.MOTOR_STATE_STOP;
     };

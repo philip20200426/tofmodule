@@ -8,6 +8,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -77,15 +78,25 @@ public class TofService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         // TODO: Return the communication channel to the service.
-        throw new UnsupportedOperationException("Not yet implemented");
+        return new TofBinder();
+    }
+    /**
+     *
+     *  通过这个方法，可以在 activity 中拿到 service 对象
+     *
+     */
+    class TofBinder extends Binder {
+        public TofService getService() {
+            return TofService.this;
+        }
     }
 
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.e(TAG, "setvalue " + JarTest.getvalue());
-        Log.e(TAG, "onCreate");
-        LogUtil.d(TAG, "-----------");
+        Log.e(TAG, "TofService onCreate");
+
+        init();
 
         //在服务内部注册接收广播
         mServiceReceiver = new ServiceReceiver();
@@ -137,13 +148,11 @@ public class TofService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.e(TAG, "onStartCommand " + intent.getIntExtra("abc", 0));
+        Log.e(TAG, "TofService onStartCommand " + intent.getIntExtra("abc", 0));
 
         startForeground();
         startTofThread();
-        mHandler.sendEmptyMessage(TYPE_INIT);
-        JarTest.setvalue(6);
-        Log.e(TAG, "setvalue " + JarTest.getvalue());
+        //mHandler.sendEmptyMessage(TYPE_INIT);
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -165,7 +174,9 @@ public class TofService extends Service {
                         flushModule();
                         break;
                     case TYPE_INIT:
-                        init();
+                        if (init() == -1) {
+                            mHandler.sendEmptyMessage(TYPE_FAIL);
+                        }
                         mHandler.sendEmptyMessage(TYPE_GET);
                         break;
                     case TYPE_GET:
@@ -221,6 +232,7 @@ public class TofService extends Service {
     }
 
     public byte init() {
+
         mTofHelper = TofHelper.getInstance();
         mParamInfo = mTofHelper.getmParamInfo();
         byte[] b = new byte[10];
@@ -235,14 +247,15 @@ public class TofService extends Service {
         mParamInfo.targetOrder = 1;
         if (mTofHelper.openModule() == 0) {
             mTofHelper.setParamInfo(mParamInfo);
-            return -1;
+            LogUtil.d(TAG, "vl53l5cx init success");
         } else {
-            mHandler.sendEmptyMessage(TYPE_FAIL);
+            LogUtil.e(TAG, "vl53l5cx init fail");
+            return -1;
         }
         return 0;
     }
 
-    public int getData() {
+    public short[] getData() {
 
         TofHelper.ResultsData mResultsData = mTofHelper.getResultsData();
         LogUtil.d(TAG, "Zone : " + 6 +
@@ -253,7 +266,7 @@ public class TofService extends Service {
                     ", Target status : " + mResultsData.targetStatus[i] +
                     ", distance : " + mResultsData.distanceMm[i]);
         }*/
-        return mResultsData.status;
+        return mResultsData.distanceMm;
     }
 
     public void flushModule() {
