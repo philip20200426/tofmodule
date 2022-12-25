@@ -9,8 +9,8 @@
     <TextView
         android:id="@+id/sample_text"
         android:gravity="center"
-        android:layout_width="500dp"
-        android:layout_height="100dp"
+        android:layout_width="600dp"
+        android:layout_height="400dp"
         android:text="TOF异常，未拿到数据"
         app:autoSizeTextType="uniform"
         app:layout_constraintBottom_toBottomOf="parent"

@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -33,8 +34,10 @@ public class MainActivity extends AppCompatActivity {
     private static int mCount = 0;
     private TextView mTextView;
     private TofService mTofService;
-    Handler mHandler;
-    Timer timer;
+    private Handler mHandler;
+    private Timer mTimer;
+    private String sTofDataE = "";
+    private String sTofDataX = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,20 +48,20 @@ public class MainActivity extends AppCompatActivity {
         mTextView =  findViewById(R.id.sample_text);
 
         // 启动service
-/*        Intent mIntent=new Intent(MainActivity.this, TofService.class) ;
+/*        Intent mIntent=new Intent(MainActivity.this, TofService.class);
         mIntent.putExtra("abc", 160927);
         startService(mIntent);*/
         //Thread1();
-
-        //      绑定 service
+        // 绑定 service
         Intent bindIntent = new Intent(MainActivity.this, TofService.class);
+        LogUtil.e(TAG, "-------------------- bindservice");
         bindService(bindIntent, connection, BIND_AUTO_CREATE);
-
-
+        mTimer = new Timer();
         mHandler = new Handler(getMainLooper()) {
             @Override
             public void handleMessage(@NonNull Message msg) {
-                mTextView.setText(String.valueOf(msg.what));
+                mTextView.setText(sTofDataX);
+                mTextView.setTextColor(Color.parseColor("#FF47A3"));
                 super.handleMessage(msg);
             }
         };
@@ -67,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        Log.e(TAG, "onStart");
+        Log.d(TAG, "onStart");
     }
 
     @Override
@@ -78,8 +81,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onStop() {
-        timer.cancel();
-        unbindService(connection);
         LogUtil.d(TAG, "onStop");
         super.onStop();
     }
@@ -87,6 +88,20 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         LogUtil.d(TAG, "onDestroy");
+        if (mTimer != null) {
+            mTimer.cancel();
+            mTimer = null;
+        }
+        if (mTimerTask != null) {
+            mTimerTask.cancel();
+            mTimerTask = null;
+        }
+        if (mHandler != null) {
+            mHandler.removeCallbacksAndMessages(null);
+            mHandler = null;
+        }
+        LogUtil.e(TAG, "-------------------- onbindservice");
+        unbindService(connection);
         if (mUiHandler != null) {
             mUiHandler.removeCallbacksAndMessages(null);
             mUiHandler = null;
@@ -117,24 +132,35 @@ public class MainActivity extends AppCompatActivity {
             //返回一个MsgService对象
             mTofService = ((TofService.TofBinder)service).getService();
             LogUtil.d(TAG, "onServiceConnected: " + name);
-            timer = new Timer();
+
             //timer.schedule(task, 0); // 此处delay为0表示没有延迟，立即执行一次task
             //timer.schedule(task, 1000); // 延迟1秒，执行一次task
-            timer.schedule(task, 200, 60); // 第二个参数是0：立即执行一次task，然后每隔500ms执行一次task
+            mTimer.schedule(mTimerTask, 1000, 500); // 第二个参数是0：立即执行一次task，然后每隔500ms执行一次task
             //响应接口返回的数据
         }
     };
 
-    TimerTask task = new TimerTask() {
+    TimerTask mTimerTask = new TimerTask() {
         @Override
         public void run() {
             // 每隔一秒使用 handler发送一下消息,也就是每隔一秒执行一次,一直重复执行
             // 使用handler发送消息
             Message message = new Message();
+            //LogUtil.d(TAG, "m : " + mTofService);
             if (mTofService != null) {
-                message.what = mTofService.getData()[36];
+                sTofDataX = "";
+                sTofDataE = mTofService.getData();
+                //LogUtil.e(TAG, "-----:" + sTofDataE);
+                String element[] = sTofDataE.split(";");
+                for (int i= 1; i< 65; i++) {
+                    String temp[] = element[i].split(" ");
+                    sTofDataX = sTofDataX + temp[2] + " ";
+                }
+                LogUtil.e(TAG, "====:" + sTofDataX);
             }
-            mHandler.sendMessage(message);
+            if (mHandler != null) {
+                mHandler.sendMessage(message);
+            }
         }
     };
 

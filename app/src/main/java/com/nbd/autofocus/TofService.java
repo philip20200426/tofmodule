@@ -255,18 +255,23 @@ public class TofService extends Service {
         return 0;
     }
 
-    public short[] getData() {
+    public String getData() {
 
         TofHelper.ResultsData mResultsData = mTofHelper.getResultsData();
-        LogUtil.d(TAG, "Zone : " + 6 +
+/*        LogUtil.d(TAG, "Zone : " + 6 +
                 ", Target status : " + mResultsData.targetStatus[6] +
-                ", distance : " + mResultsData.distanceMm[6]);
-/*        for (int i = 0; i < mParamInfo.resolutionValue; i++) {
-            Log.i(TAG, "Zone : " + i +
+                ", distance : " + mResultsData.distanceMm[6]);*/
+        String resultData = String.valueOf(mResultsData.status);
+        for (int i = 0; i < mParamInfo.resolutionValue; i++) {
+
+            resultData = resultData + ";"+ i + " " + mResultsData.targetStatus[i] + " " + mResultsData.distanceMm[i];
+/*                    Log.i(TAG, "Zone : " + i +
                     ", Target status : " + mResultsData.targetStatus[i] +
-                    ", distance : " + mResultsData.distanceMm[i]);
-        }*/
-        return mResultsData.distanceMm;
+                    ", distance : " + mResultsData.distanceMm[i]);*/
+        }
+        //LogUtil.d(TAG, "----: "+resultData);
+
+        return resultData;
     }
 
     public void flushModule() {
